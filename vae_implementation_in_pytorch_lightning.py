@@ -33,6 +33,10 @@ class VAE(pl.LightningModule):
         torch.save(self.encoder.state_dict(), filename + "_encoder.pth")
         torch.save(self.decoder.state_dict(), filename + "_decoder.pth")
     
+    def load_vae(self, filename):
+        self.encoder.load_state_dict(torch.load(filename + "_encoder.pth"))
+        self.decoder.load_state_dict(torch.load(filename + "_decoder.pth"))
+    
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=1e-4)
 
@@ -106,12 +110,16 @@ cifar10 = CIFAR10DataModule('.')
 """Now we train!"""
 
 pl.seed_everything(1234)
+training = False
 
 vae = VAE()
-vae.save_vae("before_training")
-trainer = pl.Trainer(gpus=1, max_epochs=30, progress_bar_refresh_rate=10)
-trainer.fit(vae, cifar10)
-vae.save_vae("after_training")
+if training:
+    vae.save_vae("before_training")
+    trainer = pl.Trainer(gpus=1, max_epochs=30, progress_bar_refresh_rate=10)
+    trainer.fit(vae, cifar10)
+    vae.save_vae("after_training")
+
+vae.load_vae("after_training")
 import pdb; pdb.set_trace()
 """## Plot an image"""
 
@@ -120,6 +128,8 @@ import numpy as np
 from torchvision.utils import make_grid
 from pl_bolts.transforms.dataset_normalizations import cifar10_normalization
 figure(figsize=(8, 3), dpi=300)
+
+
 
 # Z COMES FROM NORMAL(0, 1)
 num_preds = 16
